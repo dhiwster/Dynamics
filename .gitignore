@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+env/
+
+# Jupyter / Mathematica temp files
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local machine config
+.env
+local_paths.json
+
+# Simulation outputs stay in OneDrive, not Git
+simulation_outputs/
+outputs/
+data/
+results/
+*.npy
+*.npz
+*.pkl
+*.pickle
+*.h5
+*.hdf5
+*.csv
+*.parquet
+*.feather
+*.mx
+*.wxf
+*.wdx
+*.mat
+*.png
+*.jpg
+*.jpeg
+*.pdf
+*.svg
+*.gif
+*.mp4
+*.mov
+*.avi
+*.log

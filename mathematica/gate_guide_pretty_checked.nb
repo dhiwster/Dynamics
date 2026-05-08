@@ -1,0 +1,189 @@
+Notebook[{
+Cell["Executable Guide for Single- and Two-Qubit Gates", "Title"],
+
+Cell["This notebook keeps the executable content, but presents the key Hamiltonians and gate constructions in a display style closer to the original RWA notebook.", "Text"],
+
+Cell["Basic definitions", "Section"],
+
+Cell["We use the computational basis {|00>, |01>, |10>, |11>} and the usual Pauli operators.", "Text"],
+
+Cell["ClearAll[\"Global`*\"];\n\nket0 = {1, 0};\nket1 = {0, 1};\n\nId2 = IdentityMatrix[2];\n\n\\[Sigma]x = {{0, 1}, {1, 0}};\n\\[Sigma]y = {{0, -I}, {I, 0}};\n\\[Sigma]z = {{1, 0}, {0, -1}};\n\nTensor[A_, B_] := KroneckerProduct[A, B];\n\nOp1[A_] := Tensor[A, Id2];\nOp2[A_] := Tensor[Id2, A];\n\nState00 = Tensor[ket0, ket0];\nState01 = Tensor[ket0, ket1];\nState10 = Tensor[ket1, ket0];\nState11 = Tensor[ket1, ket1];\n\nStateAssociation[\\[Psi]_] := AssociationThread[\n  {\"00\", \"01\", \"10\", \"11\"},\n  Chop[\\[Psi], 10^-12]\n];\n\nPropagator[H_, t_] := MatrixExp[-I H t];\n\nGlobalPhaseDifference[U_, V_] := Module[\n  {uFlat, vFlat, idx, phase},\n  uFlat = Flatten[U];\n  vFlat = Flatten[V];\n  idx = FirstCase[\n    Range[Length[vFlat]],\n    k_ /; Abs[vFlat[[k]]] > 10^-12,\n    Missing[\"NoReference\"]\n  ];\n  If[idx === Missing[\"NoReference\"], Return[U - V]];\n  phase = uFlat[[idx]]/vFlat[[idx]];\n  Chop[U - phase V, 10^-10]\n];\n\nEquivalentUpToGlobalPhaseQ[U_, V_, tol_: 10^-10] :=\n  Max[Abs[Flatten[GlobalPhaseDifference[U, V]]]] < tol;", "Input"],
+
+Cell["Single qubit RWA", "Section"],
+
+Cell["The rotating-frame single-qubit Hamiltonian from the original notebook is", "Text"],
+
+Cell[BoxData[
+ FormBox[
+  RowBox[{
+   SubscriptBox["H", "1"], "=",
+   RowBox[{"(",
+    GridBox[{
+      {
+       RowBox[{"-",
+        FractionBox["\[CapitalDelta]\[Omega]", "2"]}],
+       RowBox[{"\[CapitalOmega]", " ",
+        SuperscriptBox["\[ExponentialE]",
+         RowBox[{"\[ImaginaryI]", " ", "\[Phi]"}]]}]},
+      {
+       RowBox[{"\[CapitalOmega]", " ",
+        SuperscriptBox["\[ExponentialE]",
+         RowBox[{
+          RowBox[{"-", "\[ImaginaryI]"}], " ", "\[Phi]"}]]}],
+       FractionBox["\[CapitalDelta]\[Omega]", "2"]}
+     }],
+    ")"}]}],
+  TraditionalForm]], "DisplayFormula"],
+
+Cell["On resonance, \\[Phi] = 0 gives an X rotation, while \\[Phi] = -Pi/2 gives a Y rotation.", "Text"],
+
+Cell["SingleQubitRWAHamiltonian[\\[CapitalDelta]\\[Omega]_, \\[CapitalOmega]_, \\[Phi]_] := {\n  {-\\[CapitalDelta]\\[Omega]/2, \\[CapitalOmega] Exp[I \\[Phi]]},\n  {\\[CapitalOmega] Exp[-I \\[Phi]], \\[CapitalDelta]\\[Omega]/2}\n};\n\nSingleQubitHamiltonian[\n  qubit_Integer,\n  \\[CapitalDelta]\\[Omega]_,\n  \\[CapitalOmega]_,\n  \\[Phi]_\n] := Switch[\n  qubit,\n  1, Op1[SingleQubitRWAHamiltonian[\\[CapitalDelta]\\[Omega], \\[CapitalOmega], \\[Phi]]],\n  2, Op2[SingleQubitRWAHamiltonian[\\[CapitalDelta]\\[Omega], \\[CapitalOmega], \\[Phi]]]\n];\n\nSingleQubitGate[\n  qubit_Integer,\n  axis_String,\n  \\[Theta]_,\n  tGate_: 1\n] := Module[\n  {\\[CapitalOmega], \\[Phi]},\n  Switch[\n    ToUpperCase[axis],\n    \"X\",\n      \\[CapitalOmega] = \\[Theta]/(2 tGate);\n      \\[Phi] = 0;,\n    \"Y\",\n      \\[CapitalOmega] = \\[Theta]/(2 tGate);\n      \\[Phi] = -Pi/2;,\n    \"Z\",\n      Return[MatrixExp[-I (\\[Theta]/2) If[qubit == 1, Op1[\\[Sigma]z], Op2[\\[Sigma]z]]]];\n  ];\n  Propagator[\n    SingleQubitHamiltonian[qubit, 0, \\[CapitalOmega], \\[Phi]],\n    tGate\n  ]\n];\n\nH1 = SingleQubitRWAHamiltonian[\\[CapitalDelta]\\[Omega], \\[CapitalOmega], \\[Phi]];\nH1 // MatrixForm", "Input"],
+
+Cell["Examples of single-qubit gates", "Subsection"],
+
+Cell[BoxData[
+ FormBox[
+  RowBox[{
+   RowBox[{SubscriptBox["U", "X"], "(", "\[Theta]", ")"}], "=",
+   SuperscriptBox["\[ExponentialE]",
+    RowBox[{
+     RowBox[{"-", "\[ImaginaryI]"}], " ",
+     FractionBox["\[Theta]", "2"], " ",
+     SubscriptBox["\[Sigma]", "x"]}]]}],
+  TraditionalForm]], "DisplayFormula"],
+
+Cell[BoxData[
+ FormBox[
+  RowBox[{
+   RowBox[{SubscriptBox["U", "Y"], "(", "\[Theta]", ")"}], "=",
+   SuperscriptBox["\[ExponentialE]",
+    RowBox[{
+     RowBox[{"-", "\[ImaginaryI]"}], " ",
+     FractionBox["\[Theta]", "2"], " ",
+     SubscriptBox["\[Sigma]", "y"]}]]}],
+  TraditionalForm]], "DisplayFormula"],
+
+Cell["UX90Q1 = SingleQubitGate[1, \"X\", Pi/2, 1];\nUY90Q2 = SingleQubitGate[2, \"Y\", Pi/2, 1];\nUZ90Q1 = SingleQubitGate[1, \"Z\", Pi/2];\n\nUX90Q1 // MatrixForm\nUY90Q2 // MatrixForm\nUZ90Q1 // MatrixForm", "Input"],
+
+Cell["Two qubit effective Hamiltonian", "Section"],
+
+Cell["Using the same effective logical Hamiltonian structure as in RWA.nb,", "Text"],
+
+Cell[BoxData[
+ FormBox[
+  RowBox[{
+   SubscriptBox["H", "2"], "=",
+   RowBox[{
+    FractionBox["1", "2"], " ",
+    RowBox[{"(",
+     GridBox[{
+       {
+        RowBox[{"2", " ", "Ez"}], "0", "0", "0"},
+       {
+        "0",
+        RowBox[{
+         RowBox[{"-", "J"}], "+", "\[Delta]Ez"}],
+        "J",
+        "0"},
+       {
+        "0",
+        "J",
+        RowBox[{
+         RowBox[{"-", "J"}], "-", "\[Delta]Ez"}],
+        "0"},
+       {"0", "0", "0",
+        RowBox[{
+         RowBox[{"-", "2"}], " ", "Ez"}]}
+      }],
+     ")"}]}]}],
+  TraditionalForm]], "DisplayFormula"],
+
+Cell["TwoQubitHamiltonian[Ez_, \\[Delta]Ez_, J_] := (1/2) {\n  {2 Ez, 0, 0, 0},\n  {0, -J + \\[Delta]Ez, J, 0},\n  {0, J, -J - \\[Delta]Ez, 0},\n  {0, 0, 0, -2 Ez}\n};\n\nH2 = TwoQubitHamiltonian[Ez, \\[Delta]Ez, J];\nH2 // MatrixForm", "Input"],
+
+Cell["The anti-parallel block diagonalizes with eigenenergies", "Text"],
+
+Cell[BoxData[
+ FormBox[
+  RowBox[{
+   SubscriptBox["E", "\[PlusMinus]"], "=",
+   FractionBox[
+    RowBox[{
+     RowBox[{"-", "J"}], "\[PlusMinus]",
+     SqrtBox[
+      RowBox[{
+       SuperscriptBox["J", "2"], "+",
+       SuperscriptBox["\[Delta]Ez", "2"]}]]}],
+    "2"]}],
+  TraditionalForm]], "DisplayFormula"],
+
+Cell["TwoQubitEigenHamiltonian[Ez_, \\[Delta]Ez_, J_] := DiagonalMatrix[{\n  Ez,\n  (-J + Sqrt[J^2 + \\[Delta]Ez^2])/2,\n  (-J - Sqrt[J^2 + \\[Delta]Ez^2])/2,\n  -Ez\n}];\n\nEntanglingRate[Ez_, \\[Delta]Ez_, J_] := Module[\n  {E},\n  E = Diagonal[TwoQubitEigenHamiltonian[Ez, \\[Delta]Ez, J]];\n  Simplify[E[[1]] - E[[2]] - E[[3]] + E[[4]]]\n];\n\nH2Diag = TwoQubitEigenHamiltonian[Ez, \\[Delta]Ez, J];\nH2Diag // MatrixForm\nEntanglingRate[Ez, \\[Delta]Ez, J]", "Input"],
+
+Cell["CZ from exchange", "Section"],
+
+Cell["The nonlocal part is treated as a ZZ interaction.", "Text"],
+
+Cell[BoxData[
+ FormBox[
+  RowBox[{
+   SubscriptBox["H", "ZZ"], "=",
+   RowBox[{
+    FractionBox["J", "4"], " ",
+    SubscriptBox["\[Sigma]", "z"], "\[CircleTimes]",
+    SubscriptBox["\[Sigma]", "z"]}]}],
+  TraditionalForm]], "DisplayFormula"],
+
+Cell[BoxData[
+ FormBox[
+  RowBox[{
+   SubscriptBox["t", "CZ"], "=",
+   FractionBox["\[Pi]", "J"]}],
+  TraditionalForm]], "DisplayFormula"],
+
+Cell[BoxData[
+ FormBox[
+  RowBox[{
+   SubscriptBox["U", "CZ"], "=",
+   RowBox[{
+    RowBox[{
+     SubscriptBox["U", "Z"], "(",
+     RowBox[{
+      RowBox[{"-", "\[Pi]"}], "/", "2"}], ")"}], "\[CircleTimes]",
+    RowBox[{
+     SubscriptBox["U", "Z"], "(",
+     RowBox[{
+      RowBox[{"-", "\[Pi]"}], "/", "2"}], ")"}], " ",
+    SuperscriptBox["\[ExponentialE]",
+     RowBox[{
+      RowBox[{"-", "\[ImaginaryI]"}], " ",
+      SubscriptBox["H", "ZZ"], " ",
+      SubscriptBox["t", "CZ"]}]]}]}],
+  TraditionalForm]], "DisplayFormula"],
+
+Cell["HZZ[J_] := (J/4) Tensor[\\[Sigma]z, \\[Sigma]z];\n\nUCZ[J_] := Module[\n  {tCZ, UZZ, ULocal},\n  tCZ = Pi/J;\n  UZZ = Propagator[HZZ[J], tCZ];\n  ULocal = SingleQubitGate[1, \"Z\", -Pi/2].SingleQubitGate[2, \"Z\", -Pi/2];\n  Chop[ULocal.UZZ, 10^-12]\n];\n\nIdealCZ = DiagonalMatrix[{1, 1, 1, -1}];\n\nJExample = 1;\nUCZExample = UCZ[JExample];\n\nUCZExample // MatrixForm\nEquivalentUpToGlobalPhaseQ[UCZExample, IdealCZ]", "Input"],
+
+Cell["Worked example", "Section"],
+
+Cell["We apply a single-qubit gate, then CZ, then a final single-qubit gate:", "Text"],
+
+Cell[BoxData[
+ FormBox[
+  RowBox[{
+   SubscriptBox["U", "total"], "=",
+   RowBox[{
+    SubscriptBox["U", "3"], " ",
+    SubscriptBox["U", "CZ"], " ",
+    SubscriptBox["U", "1"]}]}],
+  TraditionalForm]], "DisplayFormula"],
+
+Cell["with U1 = X(pi/2) on qubit 1 and U3 = Y(-pi/2) on qubit 2.", "Text"],
+
+Cell["U1 = SingleQubitGate[1, \"X\", Pi/2, 1];\nU2 = UCZ[JExample];\nU3 = SingleQubitGate[2, \"Y\", -Pi/2, 1];\n\nUTotal = Chop[U3.U2.U1, 10^-12];\n\n\\[Psi]Initial = State00;\n\\[Psi]After1 = Chop[U1.\\[Psi]Initial, 10^-12];\n\\[Psi]After2 = Chop[U2.\\[Psi]After1, 10^-12];\n\\[Psi]Final = Chop[UTotal.\\[Psi]Initial, 10^-12];\n\nStateAssociation[\\[Psi]Initial]\nStateAssociation[\\[Psi]After1]\nStateAssociation[\\[Psi]After2]\nStateAssociation[\\[Psi]Final]\nUTotal // MatrixForm", "Input"],
+
+Cell["Recommended workflow", "Section"],
+
+Cell["For long-term use, keep a plain-text .wl file as the canonical source and a notebook like this as the readable presentation version. That gives you clean diffs, reusable code, and a polished document for discussion.", "Text"]
+},
+WindowSize->{1200, 900},
+WindowMargins->{{Automatic, 100}, {Automatic, 50}},
+StyleDefinitions->"Default.nb"
+]

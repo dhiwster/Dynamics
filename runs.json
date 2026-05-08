@@ -1,0 +1,12 @@
+{
+  "shared_output_root": "~/OneDrive/simulation_outputs/",
+  "runs": [
+    {
+      "run_id": "example-run-001",
+      "parameters_file": "configs/example-run-001.json",
+      "assigned_machine": "machine-name",
+      "status": "pending",
+      "notes": "Template entry. Duplicate and edit for real runs."
+    }
+  ]
+}

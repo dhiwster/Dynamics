@@ -1,0 +1,5 @@
+# Replace these placeholders with the exact packages your project requires.
+numpy==2.2.5
+scipy==1.15.3
+matplotlib==3.10.1
+pandas==2.2.3

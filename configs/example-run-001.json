@@ -1,0 +1,9 @@
+{
+  "label": "example-run-001",
+  "model": "replace-me",
+  "parameters": {
+    "alpha": 1.0,
+    "beta": 0.1,
+    "n_steps": 1000
+  }
+}
