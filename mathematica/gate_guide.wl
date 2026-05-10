@@ -22,6 +22,7 @@ Id2 = IdentityMatrix[2];
 \[Sigma]y = {{0, -I}, {I, 0}};
 \[Sigma]z = {{1, 0}, {0, -1}};
 
+Tensor[A_?VectorQ, B_?VectorQ] := Flatten[KroneckerProduct[A, B]];
 Tensor[A_, B_] := KroneckerProduct[A, B];
 
 Op1[A_] := Tensor[A, Id2];
@@ -50,7 +51,7 @@ GlobalPhaseDifference[U_, V_] := Module[
   ];
   If[idx === Missing["NoReference"], Return[U - V]];
   phase = uFlat[[idx]]/vFlat[[idx]];
-  Chop[U - phase V, 10^-10]
+  Chop[N[U - phase V], 10^-10]
 ];
 
 EquivalentUpToGlobalPhaseQ[U_, V_, tol_: 10^-10] :=
