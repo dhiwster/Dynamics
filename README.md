@@ -36,8 +36,12 @@ If the exact filesystem location differs by OS, keep the logical target consiste
 |-- local_paths.example.json
 |-- README.md
 |-- requirements.txt
+|-- pyproject.toml
 |-- runs.json
 |-- python/
+|   |-- DQD/
+|   |-- simulations/
+|   `-- notebooks/
 |-- mathematica/
 `-- configs/
 ```
@@ -54,4 +58,11 @@ Copy `local_paths.example.json` to `local_paths.json` on each machine and adjust
 
 ## Notes for dependencies
 
-`requirements.txt` currently contains placeholder pins. Replace them with the exact packages your simulations need and update them deliberately when environments change.
+Install the Python tools from the repository root:
+
+```bash
+python -m pip install -r requirements.txt
+python -m pip install -e .
+```
+
+`pyproject.toml` defines the importable Python packages under `python/`; keep dependency pins in sync with `requirements.txt` when environments change.
