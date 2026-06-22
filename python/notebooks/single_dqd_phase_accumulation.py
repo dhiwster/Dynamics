@@ -45,23 +45,15 @@ from scipy.integrate import cumulative_trapezoid, solve_ivp
 
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    from hamiltonians.models import (
-        HBAR_UEV_NS,
-        single_dqd_eigensystem,
-        single_dqd_hamiltonian,
-        single_dqd_numpy_operators,
-        single_dqd_qubit_splitting,
-        single_dqd_tau_z_matrix_element,
-    )
-else:
-    from hamiltonians.models import (
-        HBAR_UEV_NS,
-        single_dqd_eigensystem,
-        single_dqd_hamiltonian,
-        single_dqd_numpy_operators,
-        single_dqd_qubit_splitting,
-        single_dqd_tau_z_matrix_element,
-    )
+
+from helpers import (
+    HBAR_UEV_NS,
+    single_dqd_eigensystem,
+    single_dqd_hamiltonian,
+    single_dqd_numpy_operators,
+    single_dqd_qubit_splitting,
+    single_dqd_tau_z_matrix_element,
+)
 
 
 @dataclass(frozen=True)
