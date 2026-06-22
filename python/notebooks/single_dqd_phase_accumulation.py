@@ -35,14 +35,33 @@ No QuTiP dependency is required; this draft uses numpy/scipy only.
 from __future__ import annotations
 
 import argparse
+import sys
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Callable
 
 import numpy as np
 from scipy.integrate import cumulative_trapezoid, solve_ivp
 
-
-HBAR_UEV_NS = 0.6582119569
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    from hamiltonians.models import (
+        HBAR_UEV_NS,
+        single_dqd_eigensystem,
+        single_dqd_hamiltonian,
+        single_dqd_numpy_operators,
+        single_dqd_qubit_splitting,
+        single_dqd_tau_z_matrix_element,
+    )
+else:
+    from hamiltonians.models import (
+        HBAR_UEV_NS,
+        single_dqd_eigensystem,
+        single_dqd_hamiltonian,
+        single_dqd_numpy_operators,
+        single_dqd_qubit_splitting,
+        single_dqd_tau_z_matrix_element,
+    )
 
 
 @dataclass(frozen=True)
@@ -67,72 +86,27 @@ class PulseParams:
     max_step_fraction_of_period: float = 1.0 / 20.0
 
 
-@dataclass(frozen=True)
-class Operators:
-    """Single-DQD spin and charge operators."""
-
-    sx: np.ndarray
-    sy: np.ndarray
-    sz: np.ndarray
-    tx: np.ndarray
-    ty: np.ndarray
-    tz: np.ndarray
-
-
-def pauli_operators() -> Operators:
-    """Return Pauli operators in spin tensor charge ordering."""
-
-    ident = np.eye(2, dtype=complex)
-    sx_1q = np.array([[0, 1], [1, 0]], dtype=complex)
-    sy_1q = np.array([[0, -1j], [1j, 0]], dtype=complex)
-    sz_1q = np.array([[1, 0], [0, -1]], dtype=complex)
-
-    return Operators(
-        sx=np.kron(sx_1q, ident),
-        sy=np.kron(sy_1q, ident),
-        sz=np.kron(sz_1q, ident),
-        tx=np.kron(ident, sx_1q),
-        ty=np.kron(ident, sy_1q),
-        tz=np.kron(ident, sz_1q),
-    )
-
-
-OPS = pauli_operators()
+OPS = single_dqd_numpy_operators()
 
 
 def static_hamiltonian(params: DQDParams, epsilon: float) -> np.ndarray:
     """Microscopic single-DQD Hamiltonian at fixed detuning, in micro-eV."""
-
-    return (
-        params.tc * OPS.tx
-        + 0.5 * epsilon * OPS.tz
-        + 0.5 * params.Bz * OPS.sz
-        + 0.5 * params.dBx * (OPS.sx @ OPS.tz)
-    )
+    return single_dqd_hamiltonian(params, epsilon, OPS)
 
 
 def eigensystem(params: DQDParams, epsilon: float) -> tuple[np.ndarray, np.ndarray]:
     """Return sorted eigenvalues and eigenvectors for H(epsilon)."""
-
-    energies, vectors = np.linalg.eigh(static_hamiltonian(params, epsilon))
-    order = np.argsort(energies)
-    return energies[order], vectors[:, order]
+    return single_dqd_eigensystem(params, epsilon)
 
 
 def qubit_splitting(params: DQDParams, epsilon: float) -> float:
     """Ground-to-first-excited qubit splitting in angular frequency, rad/ns."""
-
-    energies, _ = eigensystem(params, epsilon)
-    return float((energies[1] - energies[0]) / HBAR_UEV_NS)
+    return single_dqd_qubit_splitting(params, epsilon)
 
 
 def edsr_matrix_element(params: DQDParams) -> float:
     """Magnitude of <g|tau_z|e> at epsilon = 0."""
-
-    _, vectors = eigensystem(params, epsilon=0.0)
-    g = vectors[:, 0]
-    e = vectors[:, 1]
-    return float(abs(np.vdot(g, OPS.tz @ e)))
+    return single_dqd_tau_z_matrix_element(params, epsilon=0.0)
 
 
 def rx_duration(params: DQDParams, angle: float) -> float:
