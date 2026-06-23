@@ -1,14 +1,9 @@
 import numpy as np
 from qutip import basis, destroy, qeye, sigmay, tensor
 
-from hamiltonians.models import (
-    RAD_PER_US_PER_MICROELECTRONVOLT,
-    TWO_PI,
-    SingleDQDOperatorsQutip,
-    single_dqd_qutip_hamiltonian,
-    single_dqd_qutip_operators,
-    single_dqd_spectrum,
-)
+from .constants import RAD_PER_US_PER_MICROELECTRONVOLT, TWO_PI
+from .hamiltonian import single_dqd_qutip_hamiltonian, single_dqd_spectrum
+from .operators import SingleDQDOperatorsQutip, single_dqd_qutip_operators
 
 Pi2 = TWO_PI
 RAD_PER_US_PER_MICROEV = RAD_PER_US_PER_MICROELECTRONVOLT
@@ -49,12 +44,7 @@ class DQDsystem:
         self._compute_eigenbasis()
         self._build_hamiltonians()
 
-    # ------------------------------------------------------------------
-    # Operator construction
-    # ------------------------------------------------------------------
-
     def _build_single_dqd_operators(self):
-        """Spin and charge Pauli operators for one DQD."""
         ops = single_dqd_qutip_operators()
         self.sx = ops.sx
         self.sy = ops.sy
@@ -66,7 +56,6 @@ class DQDsystem:
         self.tz = ops.tz
 
     def _build_two_dqd_operators(self):
-        """Embed single-DQD operators in the two-DQD Hilbert space."""
         self.sx1 = tensor(self.sx, qeye([2, 2]))
         self.sy1 = tensor(self.sy, qeye([2, 2]))
         self.sz1 = tensor(self.sz, qeye([2, 2]))
@@ -86,34 +75,19 @@ class DQDsystem:
         self.tz2 = tensor(qeye([2, 2]), self.tz)
 
         self.ops1 = SingleDQDOperatorsQutip(
-            sx=self.sx1,
-            sy=self.sy1,
-            sz=self.sz1,
-            sm=self.sm1,
-            sp=self.sp1,
-            tx=self.tx1,
-            ty=self.ty1,
-            tz=self.tz1,
+            sx=self.sx1, sy=self.sy1, sz=self.sz1,
+            sm=self.sm1, sp=self.sp1,
+            tx=self.tx1, ty=self.ty1, tz=self.tz1,
         )
         self.ops2 = SingleDQDOperatorsQutip(
-            sx=self.sx2,
-            sy=self.sy2,
-            sz=self.sz2,
-            sm=self.sm2,
-            sp=self.sp2,
-            tx=self.tx2,
-            ty=self.ty2,
-            tz=self.tz2,
+            sx=self.sx2, sy=self.sy2, sz=self.sz2,
+            sm=self.sm2, sp=self.sp2,
+            tx=self.tx2, ty=self.ty2, tz=self.tz2,
         )
 
         self.a = tensor(destroy(self.photon_max), qeye([2, 2, 2, 2]))
 
-    # ------------------------------------------------------------------
-    # Eigenbasis and derived parameters
-    # ------------------------------------------------------------------
-
     def _compute_eigenbasis(self):
-        """Cache the single-DQD hybridization data used throughout the model."""
         spectrum = single_dqd_spectrum(self)
         self.phi_p = spectrum.phi_p
         self.phi_m = spectrum.phi_m
@@ -128,24 +102,17 @@ class DQDsystem:
         self.g_sigma = self.gc * np.sin(self.phi_bar)
         self.g_tau = self.gc * np.cos(self.phi_bar)
 
-    # ------------------------------------------------------------------
-    # Hamiltonian
-    # ------------------------------------------------------------------
-
     def _build_hamiltonians(self):
-        """Construct the full photon + two-DQD Hamiltonian in MHz units."""
         wc, gc = self.wc, self.gc
         N = self.photon_max
         a = self.a
 
-        H_static1 = (
-            tensor(qeye(N), single_dqd_qutip_hamiltonian(self, self.epsilon, self.ops1))
-            * RAD_PER_US_PER_MICROEV
-        )
-        H_static2 = (
-            tensor(qeye(N), single_dqd_qutip_hamiltonian(self, self.epsilon, self.ops2))
-            * RAD_PER_US_PER_MICROEV
-        )
+        H_dqd1 = single_dqd_qutip_hamiltonian(self, self.epsilon, self.ops1)
+        H_dqd2 = single_dqd_qutip_hamiltonian(self, self.epsilon, self.ops2)
+        self.H_dqd = H_dqd1 + H_dqd2
+
+        H_static1 = tensor(qeye(N), H_dqd1) * RAD_PER_US_PER_MICROEV
+        H_static2 = tensor(qeye(N), H_dqd2) * RAD_PER_US_PER_MICROEV
         H_photon = wc * a.dag() * a
         H_int1 = gc * tensor(qeye(N), self.tz1) * (a + a.dag())
         H_int2 = gc * tensor(qeye(N), self.tz2) * (a + a.dag())
@@ -170,18 +137,7 @@ class DQDsystem:
         self.H_edsr1_amplitude = tensor(qeye(N), self.Vac0 * self.tz1)
         self.H_edsr2_amplitude = tensor(qeye(N), self.Vac0 * self.tz2)
 
-    # ------------------------------------------------------------------
-    # Diagonalisation
-    # ------------------------------------------------------------------
-
     def diagonalization_unitary(self):
-        """
-        Return the analytic single-DQD diagonalisation unitaries.
-
-        U_flop rotates to the spin-charge hybrid basis and U_ob rotates to the
-        charge eigenbasis.
-        """
-
         Rty = lambda theta: tensor(qeye(2), (-0.5j * sigmay() * theta).expm())
         Rsxty = (-0.5j * self.sx * self.ty * self.phi_bar).expm()
         Rsytx = (-0.5j * self.sy * self.tx * 0.5 * (self.phi_p - self.phi_m)).expm()
@@ -190,18 +146,12 @@ class DQDsystem:
         return U_flop, U_ob
 
     def diagonalized_H_DQD(self):
-        """Return the single-DQD Hamiltonian in the diagonal eigenbasis."""
         H_single = single_dqd_qutip_hamiltonian(self, epsilon=0.0)
         U_flop, U_ob = self.diagonalization_unitary()
         U = U_flop * U_ob
         return (U * H_single * U.dag()).tidyup(atol=1e-10)
 
-    # ------------------------------------------------------------------
-    # State preparation
-    # ------------------------------------------------------------------
-
     def initialize_state(self, dqd1_spin="up", dqd2_spin="down"):
-        """Build the default lab-frame initial state."""
         s = {"up": 0, "down": 1}
         psi1 = basis([2, 2], [s[dqd1_spin], 0])
         psi2 = basis([2, 2], [s[dqd2_spin], 0])
@@ -212,17 +162,11 @@ class DQDsystem:
         U_ob_full = tensor(qeye(self.photon_max), U_ob, U_ob)
         return U_full * U_ob_full * psi0
 
-    # ------------------------------------------------------------------
-    # Dispersive regime diagnostics
-    # ------------------------------------------------------------------
-
     def iSWAP_gate_time(self):
-        """Return the dispersive iSWAP gate time in microseconds."""
         sign = 1 if self.d_sigma < 0 else 3
         return sign * np.pi / 2 * abs(self.d_sigma) / self.g_sigma**2
 
     def dispersive_ratios(self):
-        """Return (|g_sigma / d_sigma|, |g_tau / d_tau|)."""
         r_sigma = abs(self.g_sigma / self.d_sigma)
         r_tau = abs(self.g_tau / self.d_tau)
         return r_sigma, r_tau

@@ -3,15 +3,14 @@ Python layout
 
 Source packages:
 
-- `hamiltonians/`
-  Shared Hamiltonian helpers, models, and reusable builders.
-- `dqd/`
-  Double-quantum-dot system, builders, circuit tooling, and solvers.
+- `helpers/`
+  Shared Hamiltonian, operator, pulse, solver, and DQD support code.
 - `notebooks/`
   Exploratory notebooks and ad hoc experiment scripts.
 
 Current rule of thumb:
 
-- Put reusable Hamiltonian/model helpers in `hamiltonians/`.
-- Put problem-specific implementations in their own top-level package such as `dqd/`.
+- Put reusable simulation code in `helpers/`.
+- Keep problem-specific experiments in notebooks or dedicated scripts unless they
+  clearly belong in the shared helper layer.
 - Keep notebooks and one-off experiment scripts out of the source packages.
