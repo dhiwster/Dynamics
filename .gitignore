@@ -26,7 +26,10 @@ Thumbs.db
 .env
 local_paths.json
 uv.lock
-references/
+references/*
+!references/published/
+references/published/*
+!references/published/two_qubit_gate_with_resonator_workflow.md
 python/*.egg-info/
 
 # Simulation outputs stay in OneDrive, not Git
