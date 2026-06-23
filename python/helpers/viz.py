@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import numpy as np
 
-from .constants import HBAR_UEV_NS
+from .constants import RAD_PER_NS_PER_MICROELECTRONVOLT
 from .system import DQDsystem
 
-hbar_ns = HBAR_UEV_NS
 _MHz2GHz = 1e-3
 
 
@@ -21,11 +20,13 @@ def _g_sigma_at_eps(dqd: DQDsystem, eps: float) -> float:
 def print_summary(dqd: DQDsystem) -> None:
     """Print key derived parameters and gate times for the given DQDsystem."""
     phi_bar     = dqd.phi_bar
-    Esigma_GHz  = dqd.Esigma / hbar_ns
+    Esigma_GHz  = dqd.Esigma * RAD_PER_NS_PER_MICROELECTRONVOLT
     g_sigma_GHz = dqd.g_sigma * _MHz2GHz
     d_sigma_GHz = dqd.d_sigma * _MHz2GHz
     tg_iSWAP    = dqd.iSWAP_gate_time() * 1e3
-    t_x180      = np.pi * hbar_ns / (dqd.Vac0 * np.sin(phi_bar))
+    t_x180      = np.pi / (
+        dqd.Vac0 * np.sin(phi_bar) * RAD_PER_NS_PER_MICROELECTRONVOLT
+    )
     r_s, _      = dqd.dispersive_ratios()
 
     print(f"DQD:        tc={dqd.tc} μeV,  Bz={dqd.Bz} μeV (fixed),  bx={dqd.bx} μeV (fixed)")
@@ -35,7 +36,10 @@ def print_summary(dqd: DQDsystem) -> None:
     print(f"Coupling:   g_σ={g_sigma_GHz*1e3:.4f} MHz,  Δ_σ={d_sigma_GHz*1e3:.2f} MHz,  g/Δ={r_s:.5f}")
     print(f"tg(iSWAP):  {tg_iSWAP:.4f} ns")
     print(f"t(Rx90):    {t_x180/2:.4f} ns,  t(Rx180): {t_x180:.4f} ns")
-    print(f"Vac0:       {dqd.Vac0} μeV  (Rabi={dqd.Vac0/hbar_ns*np.sin(phi_bar)*1e3:.3f} MHz)")
+    print(
+        f"Vac0:       {dqd.Vac0} μeV  "
+        f"(Rabi={dqd.Vac0 * np.sin(phi_bar) * RAD_PER_NS_PER_MICROELECTRONVOLT * 1e3:.3f} MHz)"
+    )
     print(f"ε_idle:     {dqd.epsilon_idle:.1f} μeV")
 
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from .constants import HBAR_UEV_NS
+from .constants import RAD_PER_NS_PER_MICROELECTRONVOLT
 from .gates import (
     _H0_ns,
     _edsr1_op,
@@ -12,8 +12,6 @@ from .gates import (
     zrot_delta_freq_GHz,
 )
 from .system import DQDsystem
-
-hbar_ns = HBAR_UEV_NS
 
 
 class DQDSequenceCompiler:
@@ -44,7 +42,7 @@ class DQDSequenceCompiler:
         self._dt         = dt
         self._steps: list = []
         self._phi_bar    = dqd.phi_bar
-        self._Esigma_GHz = dqd.Esigma / hbar_ns
+        self._Esigma_GHz = dqd.Esigma * RAD_PER_NS_PER_MICROELECTRONVOLT
         self._eps_idle   = dqd.epsilon_idle
         self.phase_accumulator = [0.0, 0.0]
 
@@ -69,7 +67,9 @@ class DQDSequenceCompiler:
         if target not in (1, 2):
             raise ValueError("target must be 1 or 2")
 
-        duration  = abs(angle) * hbar_ns / (self._sys.Vac0 * np.sin(self._phi_bar))
+        duration  = abs(angle) / (
+            self._sys.Vac0 * np.sin(self._phi_bar) * RAD_PER_NS_PER_MICROELECTRONVOLT
+        )
         phi_drive = self.phase_accumulator[target - 1]
 
         idle = 3 - target
@@ -162,10 +162,10 @@ class DQDSequenceCompiler:
                 H_drv = _edsr1_op(dqd) if tgt == 1 else _edsr2_op(dqd)
                 H_idl = _eps2_op(dqd)  if tgt == 1 else _eps1_op(dqd)
 
-                def _edsr(t, args=None, _t0=t0, _t1=t1, _w=Esigma_GHz, _phi=phi_drive):
+                def _edsr(t, _t0=t0, _t1=t1, _w=Esigma_GHz, _phi=phi_drive, **kwargs):
                     return np.cos(_w * t + _phi) if _t0 <= t < _t1 else 0.0
 
-                def _idle_x(t, args=None, _t0=t0, _t1=t1, _e=eps_idle):
+                def _idle_x(t, _t0=t0, _t1=t1, _e=eps_idle, **kwargs):
                     return _e if _t0 <= t < _t1 else 0.0
 
                 terms.append([H_drv, _edsr])

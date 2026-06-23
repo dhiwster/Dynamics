@@ -38,6 +38,7 @@ If the exact filesystem location differs by OS, keep the logical target consiste
 |-- requirements.txt
 |-- pyproject.toml
 |-- runs.json
+|-- references/
 |-- python/
 |   |-- DQD/
 |   |-- simulations/
@@ -50,6 +51,12 @@ If the exact filesystem location differs by OS, keep the logical target consiste
 
 Copy `local_paths.example.json` to `local_paths.json` on each machine and adjust paths there.
 `local_paths.json` is ignored by Git so every computer can point to its own OneDrive mount location while scripts keep a stable config shape.
+Use the `reference_files` block there for machine-specific absolute paths to external papers and notebooks used by the derivations.
+
+## External references
+
+Track stable reference names and usage notes under `references/`.
+Keep actual absolute filesystem paths in `local_paths.json` instead of hardcoding personal machine paths into scripts.
 
 ## Notes for Mathematica
 

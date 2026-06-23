@@ -1,0 +1,77 @@
+Notebook[{
+Cell["Readable Guide for the Spin-Spin Coupling Derivation", "Title"],
+
+Cell["This notebook is a human-readable companion to Spinspincoupling_clean_executable.wl. It keeps the same derivation, but breaks it into shorter sections so the model, projections, and final reduction are easier to follow in Mathematica.", "Text"],
+
+Cell["Recommended workflow", "Section"],
+
+Cell["Keep the .wl file as the canonical executable source, and use this notebook as the presentation and exploration layer. That gives you clean git diffs plus a readable derivation you can open, evaluate cell-by-cell, and annotate.", "Text"],
+
+Cell["NCAlgebra integration", "Section"],
+
+Cell["If NCAlgebra is installed, use it as the symbolic layer for noncommutative products. The exact Schrieffer-Wolff calculation can still stay matrix-based in the backend. This is the clean split: NCAlgebra for readable operator expressions, matrix algebra for the checked effective Hamiltonian.", "Text"],
+
+Cell["ClearAll[\"Global`*\"];\n\nusingNCAlgebra = Quiet[\n  Check[\n    Needs[\"NCAlgebra`\"];\n    True,\n    False\n  ]\n];\n\nncSymbols = {\n  a, ad,\n  tau1x, tau1y, tau1z, tau2x, tau2y, tau2z,\n  sigma1x, sigma1y, sigma1z, sigma2x, sigma2y, sigma2z,\n  tau1zSigma1x, tau2zSigma2x\n};\n\nIf[usingNCAlgebra,\n  SetNonCommutative @@ ncSymbols;\n];\n\nusingNCAlgebra", "Input"],
+
+Cell["Notation map to the Benito et al. paper", "Section"],
+
+Cell["This code uses eTau, eSigma, omegaC, gTau, and gSigma. Relative to the paper notation, E_tau = 2 eTau, E_sigma = 2 eSigma, omega_c = omegaC, and the spin-exchange term emerges after projecting to the lower charge manifold and keeping the RWA exchange structure.", "Text"],
+
+Cell["1. Basic operators and Hilbert-space ordering", "Section"],
+
+Cell["We work in the basis photon \\[CircleTimes] tau1 \\[CircleTimes] sigma1 \\[CircleTimes] tau2 \\[CircleTimes] sigma2, truncating the cavity to {|0>, |1>}. That is enough for the second-order empty-cavity effective Hamiltonian.", "Text"],
+
+Cell["ClearAll[\"Global`*\"];\n\ndPhoton = 2;\n\nid[n_Integer] := IdentityMatrix[n];\n\nsx = PauliMatrix[1];\nsy = PauliMatrix[2];\nsz = PauliMatrix[3];\nsp = {{0, 1}, {0, 0}};\nsm = {{0, 0}, {1, 0}};\n\na = SparseArray[Band[{1, 2}] -> Sqrt[Range[dPhoton - 1]], {dPhoton, dPhoton}];\nad = Transpose[a];\nnPhoton = ad . a;\n\nopPhoton[op_] := KroneckerProduct[op, id[2], id[2], id[2], id[2]];\nopTau1[op_] := KroneckerProduct[id[dPhoton], op, id[2], id[2], id[2]];\nopSigma1[op_] := KroneckerProduct[id[dPhoton], id[2], op, id[2], id[2]];\nopTau2[op_] := KroneckerProduct[id[dPhoton], id[2], id[2], op, id[2]];\nopSigma2[op_] := KroneckerProduct[id[dPhoton], id[2], id[2], id[2], op];\n\ntau1x = opTau1[sx]; tau1y = opTau1[sy]; tau1z = opTau1[sz];\ntau2x = opTau2[sx]; tau2y = opTau2[sy]; tau2z = opTau2[sz];\nsigma1x = opSigma1[sx]; sigma1y = opSigma1[sy]; sigma1z = opSigma1[sz];\nsigma2x = opSigma2[sx]; sigma2y = opSigma2[sy]; sigma2z = opSigma2[sz];\n\nphotonX = opPhoton[a + ad];\nphotonNumber = opPhoton[nPhoton];\n\ncomm[a_, b_] := a . b - b . a;", "Input"],
+
+Cell["2. Model Hamiltonian", "Section"],
+
+Cell["This is the same charge-spin-photon model used before the paper's lower-charge and dispersive reductions. The symbolic front-end uses Mathematica's noncommutative product **, optionally backed by NCAlgebra if it is available.", "Text"],
+
+Cell["assumptions =\n  Element[{eTau, eSigma, omegaC, gSigma, gTau}, Reals] &&\n  eTau > 0 && eSigma > 0 && omegaC > 0;\n\nsymbolicSiteCoupling[site_Integer] := Switch[\n  site,\n  1, gSigma tau1zSigma1x - gTau tau1x,\n  2, gSigma tau2zSigma2x - gTau tau2x\n];\n\nh0Sym =\n  eTau (tau1z + tau2z) +\n  eSigma (sigma1z + sigma2z) +\n  omegaC (ad ** a);\n\nhISym = (symbolicSiteCoupling[1] + symbolicSiteCoupling[2]) ** (a + ad);\n\nh0Sym\nhISym", "Input"],
+
+Cell["The matrix backend below is still what we use for the exact SW solve. The symbolic layer is for readability and, if NCAlgebra is installed, for noncommutative manipulation in the notebook.", "Text"],
+
+Cell["3. Symbolic Schrieffer-Wolff step", "Section"],
+
+Cell["The script solves [S, H0] = -HI element-by-element in the diagonal basis of H0, then forms H2 = (1/2)[S, HI]. This is the part that makes the executable derivation slower than the hand-reduced paper treatment.", "Text"],
+
+Cell["energies = Diagonal[h0];\n\nswGenerator[v_] := Module[\n  {dim, entries},\n  dim = Length[v];\n  entries = Table[\n    If[i == j || v[[i, j]] === 0,\n      0,\n      Simplify[v[[i, j]]/(energies[[i]] - energies[[j]]), assumptions]\n    ],\n    {i, dim}, {j, dim}\n  ];\n  SparseArray[entries]\n];\n\nsGenerator = swGenerator[hI];\n\nhEffSecondOrder = 1/2 comm[sGenerator, hI];\nhEff = h0 + hEffSecondOrder;", "Input"],
+
+Cell["4. Photon-vacuum and lower-charge projections", "Section"],
+
+Cell["The paper's effective two-spin model is not the full second-order Hamiltonian. First we project to the photon vacuum. Then we project to the lower charge manifold tau_z^(1) = tau_z^(2) = -1, leaving a 4 x 4 spin Hamiltonian.", "Text"],
+
+Cell["projectPhotonVacuum[m_] := Module[\n  {p0},\n  p0 = KroneckerProduct[{{1, 0}}, id[16]];\n  p0 . m . Transpose[p0]\n];\n\nhVac0 = projectPhotonVacuum[h0];\nhVac2 = projectPhotonVacuum[hEffSecondOrder];\nhVac = projectPhotonVacuum[hEff];\n\nprojectLowerCharge[m_] := Module[\n  {pCharge},\n  pCharge = KroneckerProduct[{{0, 1}}, id[2], {{0, 1}}, id[2]];\n  pCharge . m . Transpose[pCharge]\n];\n\nhSpin0 = projectLowerCharge[hVac0];\nhSpin2 = projectLowerCharge[hVac2];\nhSpin = projectLowerCharge[hVac];", "Input"],
+
+Cell["5. Pauli decompositions", "Section"],
+
+Cell["We decompose both the full 4-body projected Hamiltonian and the final 2-spin Hamiltonian in Pauli bases so the structure is easy to inspect term-by-term.", "Text"],
+
+Cell["paulis = <|\n  \"I\" -> id[2],\n  \"X\" -> sx,\n  \"Y\" -> sy,\n  \"Z\" -> sz\n|>;\n\npauliStrings[n_Integer] := pauliStrings[n] = Module[\n  {keys, labels},\n  keys = Keys[paulis];\n  labels = Tuples[keys, n];\n  AssociationThread[\n    StringJoin /@ labels,\n    KroneckerProduct @@ (paulis /@ #) & /@ labels\n  ]\n];\n\npauliDecompose[m_, n_Integer] := Module[\n  {basis, coeffs, norm},\n  basis = pauliStrings[n];\n  norm = 2^n;\n  coeffs = Association @ KeyValueMap[\n    #1 -> Simplify[Together[Tr[#2 . m]/norm], assumptions] &,\n    basis\n  ];\n  Select[coeffs, ! TrueQ[Simplify[Together[#] == 0, assumptions]] &]\n];\n\npauliBasis4 = pauliStrings[4];\npauliBasis2 = pauliStrings[2];\n\nhVac0Terms = pauliDecompose[hVac0, 4];\nhVac2Terms = pauliDecompose[hVac2, 4];\nhVacTerms = pauliDecompose[hVac, 4];\n\nhSpin0Terms = pauliDecompose[hSpin0, 2];\nhSpin2Terms = pauliDecompose[hSpin2, 2];\nhSpinTerms = pauliDecompose[hSpin, 2];", "Input"],
+
+Cell["6. Self terms, cross terms, and the paper-facing spin Hamiltonian", "Section"],
+
+Cell["The full derivation separates local self-energy pieces from the cavity-mediated cross piece. After the lower-charge projection, the cross term becomes the spin-spin coupling that we further rewrite in the RWA exchange form used in the paper.", "Text"],
+
+Cell["hI1 = siteCoupling[1] . photonX;\nhI2 = siteCoupling[2] . photonX;\ns1 = swGenerator[hI1];\ns2 = swGenerator[hI2];\n\nself1Vac2 = projectPhotonVacuum[1/2 comm[s1, hI1]];\nself2Vac2 = projectPhotonVacuum[1/2 comm[s2, hI2]];\ncrossVac2 = projectPhotonVacuum[1/2 (comm[s1, hI2] + comm[s2, hI1])];\n\nself1Terms = pauliDecompose[self1Vac2, 4];\nself2Terms = pauliDecompose[self2Vac2, 4];\ncrossTerms = pauliDecompose[crossVac2, 4];\n\nself1Spin2 = projectLowerCharge[self1Vac2];\nself2Spin2 = projectLowerCharge[self2Vac2];\ncrossSpin2 = projectLowerCharge[crossVac2];\n\nself1SpinTerms = pauliDecompose[self1Spin2, 2];\nself2SpinTerms = pauliDecompose[self2Spin2, 2];\ncrossSpinTerms = pauliDecompose[crossSpin2, 2];\n\nspinOp1[op_] := KroneckerProduct[op, id[2]];\nspinOp2[op_] := KroneckerProduct[id[2], op];\nspinExchange = KroneckerProduct[sp, sm] + KroneckerProduct[sm, sp];\n\nspinIICoeff = Lookup[hSpin2Terms, \"II\", 0];\nspinZICoeff = Lookup[hSpin2Terms, \"ZI\", 0];\nspinIZCoeff = Lookup[hSpin2Terms, \"IZ\", 0];\nspinZZCoeff = Lookup[hSpin2Terms, \"ZZ\", 0];\nspinExchangeCoeff = Simplify[\n  Lookup[hSpin2Terms, \"XX\", 0] + Lookup[hSpin2Terms, \"YY\", 0],\n  assumptions\n];\n\nhSpinRWA2 = Simplify[\n  spinIICoeff id[4] +\n  spinZICoeff spinOp1[sz] +\n  spinIZCoeff spinOp2[sz] +\n  spinZZCoeff KroneckerProduct[sz, sz] +\n  spinExchangeCoeff spinExchange,\n  assumptions\n];\n\nhSpinRWA = Simplify[hSpin0 + hSpinRWA2, assumptions];\nhSpinRWA2Terms = pauliDecompose[hSpinRWA2, 2];\nhSpinRWATerms = pauliDecompose[hSpinRWA, 2];", "Input"],
+
+Cell["7. Consistency checks", "Section"],
+
+Cell["These are the same executable checks used by the script, plus projected-space checks for the spin reduction.", "Text"],
+
+Cell["zeroQ[m_] := Module[\n  {entries},\n  entries = DeleteCases[DeleteDuplicates[Flatten[Normal[m]]], 0];\n  AllTrue[entries, Simplify[Together[#] == 0, assumptions] &]\n];\n\nchecks = <|\n  \"SW condition [S,H0] + HI == 0\" -> zeroQ[comm[sGenerator, h0] + hI],\n  \"S is anti-Hermitian\" -> zeroQ[sGenerator + ConjugateTranspose[sGenerator]],\n  \"self + cross reconstructs H2\" -> zeroQ[self1Vac2 + self2Vac2 + crossVac2 - hVac2],\n  \"projected self + cross reconstructs spin H2\" ->\n    zeroQ[self1Spin2 + self2Spin2 + crossSpin2 - hSpin2],\n  \"Pauli decomposition reconstructs H2\" ->\n    zeroQ[Total[KeyValueMap[#2 pauliBasis4[#1] &, hVac2Terms]] - hVac2],\n  \"Pauli decomposition reconstructs spin H2\" ->\n    zeroQ[Total[KeyValueMap[#2 pauliBasis2[#1] &, hSpin2Terms]] - hSpin2]\n|>;\n\nchecks", "Input"],
+
+Cell["8. Quick inspection cells", "Section"],
+
+Cell["Evaluate these after the cells above. They give the pieces most useful for comparing against the Benito et al. dispersive spin-only Hamiltonian.", "Text"],
+
+Cell["hVac2Terms\n\ncrossTerms\n\nhSpin2Terms\n\ncrossSpinTerms\n\nhSpinRWATerms\n\nspinExchangeCoeff", "Input"],
+
+Cell["If you want the exact same printed report as the script, evaluate the script directly:", "Text"],
+
+Cell["Get[NotebookDirectory[] <> \"Spinspincoupling_clean_executable.wl\"]", "Input"]
+},
+WindowSize->{1200, 900},
+WindowMargins->{{Automatic, 100}, {Automatic, 50}},
+StyleDefinitions->"Default.nb"
+]

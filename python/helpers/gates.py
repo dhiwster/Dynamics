@@ -3,11 +3,10 @@ from __future__ import annotations
 import numpy as np
 import qutip as qt
 
-from .constants import HBAR_UEV_NS
+from .constants import RAD_PER_NS_PER_MICROELECTRONVOLT
 from .pulses import Pulse, constant
 from .system import DQDsystem
 
-hbar_ns = HBAR_UEV_NS
 _MHz2GHz = 1e-3
 
 
@@ -20,19 +19,23 @@ def _H0_ns(dqd: DQDsystem) -> qt.Qobj:
 
 
 def _eps1_op(dqd: DQDsystem) -> qt.Qobj:
-    return qt.tensor(qt.qeye(dqd.photon_max), dqd.tz1) / (2 * hbar_ns)
+    return qt.tensor(qt.qeye(dqd.photon_max), dqd.tz1) * (
+        0.5 * RAD_PER_NS_PER_MICROELECTRONVOLT
+    )
 
 
 def _eps2_op(dqd: DQDsystem) -> qt.Qobj:
-    return qt.tensor(qt.qeye(dqd.photon_max), dqd.tz2) / (2 * hbar_ns)
+    return qt.tensor(qt.qeye(dqd.photon_max), dqd.tz2) * (
+        0.5 * RAD_PER_NS_PER_MICROELECTRONVOLT
+    )
 
 
 def _edsr1_op(dqd: DQDsystem) -> qt.Qobj:
-    return dqd.H_edsr1_amplitude / hbar_ns
+    return dqd.H_edsr1_amplitude * RAD_PER_NS_PER_MICROELECTRONVOLT
 
 
 def _edsr2_op(dqd: DQDsystem) -> qt.Qobj:
-    return dqd.H_edsr2_amplitude / hbar_ns
+    return dqd.H_edsr2_amplitude * RAD_PER_NS_PER_MICROELECTRONVOLT
 
 
 # ---------------------------------------------------------------------------
@@ -50,7 +53,7 @@ def zrot_delta_freq_GHz(dqd: DQDsystem, eps_amp: float) -> float:
     e_base = np.sort(H_base.eigenenergies())
     e_det  = np.sort(H_det.eigenenergies())
 
-    return abs((e_det[1] - e_det[0]) - (e_base[1] - e_base[0])) / hbar_ns
+    return abs((e_det[1] - e_det[0]) - (e_base[1] - e_base[0])) * RAD_PER_NS_PER_MICROELECTRONVOLT
 
 
 def zrot_time_ns(dqd: DQDsystem, eps_amp: float, angle: float) -> float:
@@ -81,14 +84,14 @@ def xrot_H(
     if target not in (1, 2):
         raise ValueError("target must be 1 or 2")
     eps_idle   = dqd.epsilon_idle if eps_idle is None else eps_idle
-    Esigma_GHz = dqd.Esigma / hbar_ns
+    Esigma_GHz = dqd.Esigma * RAD_PER_NS_PER_MICROELECTRONVOLT
     H0         = _H0_ns(dqd)
     H_drv, H_idl = (_edsr1_op(dqd), _eps2_op(dqd)) if target == 1 else (_edsr2_op(dqd), _eps1_op(dqd))
 
-    def _edsr(t, args=None):
+    def _edsr(t, **kwargs):
         return np.cos(Esigma_GHz * t) if t_start <= t < t_end else 0.0
 
-    def _idle(t, args=None):
+    def _idle(t, **kwargs):
         return eps_idle if not (t_start <= t < t_end) else 0.0
 
     return [H0, [H_drv, _edsr], [H_idl, _idle]]
@@ -109,10 +112,10 @@ def zrot_H(
     H0       = _H0_ns(dqd)
     H_tgt, H_idl = (_eps1_op(dqd), _eps2_op(dqd)) if target == 1 else (_eps2_op(dqd), _eps1_op(dqd))
 
-    def _eps_pulse(t, args=None):
+    def _eps_pulse(t, **kwargs):
         return eps_amp if t_start <= t < t_end else 0.0
 
-    def _idle_full(t, args=None):
+    def _idle_full(t, **kwargs):
         return eps_idle if not (t_start <= t < t_end) else 0.0
 
     return [H0, [H_tgt, _eps_pulse], [H_idl, _idle_full]]
@@ -148,7 +151,9 @@ def initial_full_state(
 # ---------------------------------------------------------------------------
 
 def _delta(base: float, pulse: Pulse) -> Pulse:
-    def f(t: float, args: dict | None = None) -> float:
+    def f(t: float, args: dict | None = None, **kwargs) -> float:
+        if kwargs:
+            args = {**(args or {}), **kwargs}
         return pulse(t, args) - base
     return f
 

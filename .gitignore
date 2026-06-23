@@ -25,6 +25,9 @@ Thumbs.db
 # Local machine config
 .env
 local_paths.json
+uv.lock
+references/
+python/*.egg-info/
 
 # Simulation outputs stay in OneDrive, not Git
 simulation_outputs/

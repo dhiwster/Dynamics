@@ -1,6 +1,9 @@
 from .constants import (
-    HBAR_UEV_NS,
-    HBAR_UEV_US,
+    ELEMENTARY_CHARGE_C,
+    HBAR_J_S,
+    MICROELECTRONVOLT_TO_JOULE,
+    MICROSECOND_TO_SECOND,
+    NANOSECOND_TO_SECOND,
     RAD_PER_NS_PER_MICROELECTRONVOLT,
     RAD_PER_US_PER_MICROELECTRONVOLT,
     TWO_PI,
@@ -23,7 +26,6 @@ from .pulses import Pulse, constant, piecewise, square
 try:
     from .gates import (
         build_H,
-        hbar_ns,
         initial_full_state,
         iswap_H,
         vacuum_eigenstates,
@@ -50,8 +52,11 @@ except ModuleNotFoundError as exc:
         raise
 
 __all__ = [
-    "HBAR_UEV_NS",
-    "HBAR_UEV_US",
+    "ELEMENTARY_CHARGE_C",
+    "HBAR_J_S",
+    "MICROELECTRONVOLT_TO_JOULE",
+    "MICROSECOND_TO_SECOND",
+    "NANOSECOND_TO_SECOND",
     "RAD_PER_NS_PER_MICROELECTRONVOLT",
     "RAD_PER_US_PER_MICROELECTRONVOLT",
     "TWO_PI",
@@ -61,7 +66,6 @@ __all__ = [
     "dqd_qubit_unitary",
     "DQDSequenceCompiler",
     "DQDsystem",
-    "hbar_ns",
     "initial_full_state",
     "iswap_H",
     "piecewise",

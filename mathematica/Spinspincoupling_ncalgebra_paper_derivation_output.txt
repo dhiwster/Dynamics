@@ -1,0 +1,62 @@
+NCAlgebra available: True
+
+Single-site eigenvector rotation for the charge-spin blocks
+Using the same style of 2x2 eigenvector rotation as in the IO theory notebook.
+h_block,- = {{(Bz - 2*tc)/2, bx/2}, {bx/2, (-Bz + 2*tc)/2}}
+h_block,+ = {{(-Bz - 2*tc)/2, bx/2}, {bx/2, (Bz + 2*tc)/2}}
+theta_- = ArcTan[bx/(2 tc - Bz)]
+theta_+ = ArcTan[bx/(2 tc + Bz)]
+theta_bar = (theta_+ + theta_-)/2
+E_- = Sqrt[bx^2 + (Bz - 2*tc)^2]/2
+E_+ = Sqrt[bx^2 + (Bz + 2*tc)^2]/2
+U_- = {{Cos[theta_-/2], -Sin[theta_-/2]}, {Sin[theta_-/2], Cos[theta_-/2]}}
+U_+ = {{Cos[theta_+/2], -Sin[theta_+/2]}, {Sin[theta_+/2], Cos[theta_+/2]}}
+U_- h_- U_-^dagger = {{-Sqrt[bx^2 + (Bz - 2*tc)^2]/2, 0}, {0, Sqrt[bx^2 + (Bz - 2*tc)^2]/2}}
+U_+ h_+ U_+^dagger = {{-Sqrt[bx^2 + (Bz + 2*tc)^2]/2, 0}, {0, Sqrt[bx^2 + (Bz + 2*tc)^2]/2}}
+U_- sigma_x U_-^dagger = {{-Sin[theta_-], Cos[theta_-]}, {Cos[theta_-], Sin[theta_-]}}
+U_+ sigma_x U_+^dagger = {{-Sin[theta_+], Cos[theta_+]}, {Cos[theta_+], Sin[theta_+]}}
+The helper eigenRotvector2x2 is kept as the implementation route; the matrices above are the compact angle-form equivalents.
+At the operator level, this first basis change is what turns the bare dipole coupling into the paper structure -gTau tau_x + gSigma tau_z sigma_x.
+Paper mapping: gTau = gc Cos[theta_bar], gSigma = gc Sin[theta_bar].
+This is the basis-change step that produces the later tau_x and tau_z sigma_x structure.
+
+Full symbolic model before lower-charge projection
+H0_full = (ESigma1*sigma1z)/2 + (ESigma2*sigma2z)/2 + (ETau1*tau1z)/2 + (ETau2*tau2z)/2 + omegaC*ad**a
+HI_full = (-(gTau1*tau1x) - gTau2*tau2x + gSigma1*tau1z**sigma1x + gSigma2*tau2z**sigma2x)**(a + ad)
+
+Lower-charge projection: tau_z^(1) = tau_z^(2) = -1, tau_x^(i) -> 0
+H0_projected = -1/2*ETau1 - ETau2/2 + (omegaQ1*sz1)/2 + (omegaQ2*sz2)/2 + omegaC*ad**a
+HI_projected = -(gSigma1*(sm1 + sp1)**(a + ad)) - gSigma2*(sm2 + sp2)**(a + ad)
+
+Rotating-frame transformation and rotating-wave approximation
+Following the reference notebook pattern: H_rot = U H U^dagger + i (dU/dt) U^dagger.
+U_rot(t) = Exp[i t (omegaC ad**a + (omegaQ1/2) sz1 + (omegaQ2/2) sz2)]
+Detuning convention: delta_i = omegaQi - omegaC.
+HI_rot(t) = g1*(a**sm1/E^(I*(omegaC + omegaQ1)*t) + E^(I*delta1*t)*a**sp1 + ad**sm1/E^(I*delta1*t) + E^(I*(omegaC + omegaQ1)*t)*ad**sp1) + g2*(a**sm2/E^(I*(omegaC + omegaQ2)*t) + E^(I*delta2*t)*a**sp2 + ad**sm2/E^(I*delta2*t) + E^(I*(omegaC + omegaQ2)*t)*ad**sp2)
+RWA drops the fast terms exp[+- i (omegaC + omegaQi) t] a sm_i and ad sp_i.
+HI_RWA(t) = g1*(E^(I*delta1*t)*a**sp1 + ad**sm1/E^(I*delta1*t)) + g2*(E^(I*delta2*t)*a**sp2 + ad**sm2/E^(I*delta2*t))
+For the static dispersive SW step we strip the slow phases and use HI_RWA = g1*a**sp1 + g2*a**sp2 + g1*ad**sm1 + g2*ad**sm2
+
+Symbolic Schrieffer-Wolff generator for the static RWA Hamiltonian
+Using the standard dispersive SW choice from the supplementary derivation.
+HI_RWA = g1*a**sp1 + g2*a**sp2 + g1*ad**sm1 + g2*ad**sm2
+S = (g1*a**sp1)/delta1 + (g2*a**sp2)/delta2 - (g1*ad**sm1)/delta1 - (g2*ad**sm2)/delta2
+SW check ([S,H0] + HI_RWA == 0): True
+
+Second-order empty-cavity dispersive Hamiltonian
+Evaluating 1/2 [S, HI_RWA] with same-site spin algebra and cross-site commutativity.
+H2_vac = g1^2/(2*delta1) + g2^2/(2*delta2) + (g1^2*sz1)/(2*delta1) + (g2^2*sz2)/(2*delta2) + (g1*g2*sm1**sp2)/(2*delta1) + (g1*g2*sm1**sp2)/(2*delta2) + (g1*g2*sp1**sm2)/(2*delta1) + (g1*g2*sp1**sm2)/(2*delta2)
+Hd_rotating = (g1*g2*sm1**sp2)/(2*delta1) + (g1*g2*sm1**sp2)/(2*delta2) + (g1*g2*sp1**sm2)/(2*delta1) + (g1*g2*sp1**sm2)/(2*delta2)
+J12 = ((delta1^(-1) + delta2^(-1))*g1*g2)/2
+
+First-order transformed cavity annihilation operator
+Using a -> a + [S,a] to first order, then projecting to the empty cavity.
+a_eff,vac = (g1*sm1)/delta1 + (g2*sm2)/delta2
+With paper convention D[c] rho = 2 c rho c^dagger - c^dagger c rho - rho c^dagger c,
+the Purcell term is (kappa/2) D[(g1*sm1)/delta1 + (g2*sm2)/delta2].
+
+Identical-DQD specialization matching the paper
+Hd_identical = (gSigma^2*sm1**sp2)/Delta1 + (gSigma^2*sp1**sm2)/Delta1
+J_identical = gSigma^2/Delta1
+a_eff,vac,identical = (gSigma*sm1)/Delta1 + (gSigma*sm2)/Delta1
+Paper Eq. (2): Hd = (gSigma^2/Delta1) (sp1 ** sm2 + sm1 ** sp2).

@@ -1,4 +1,11 @@
 {
   "shared_output_root": "~/OneDrive/simulation_outputs/",
-  "machine_name": "replace-with-this-machine-name"
+  "machine_name": "replace-with-this-machine-name",
+  "research_notes_root": "C:/path/to/Research Diary/06 Projects/Dynamics",
+  "zotero_root": "C:/path/to/Zotero",
+  "reference_files": {
+    "benito_2019_paper_pdf": "C:/path/to/Benito et al. - 2019 - Optimized cavity-mediated dispersive two-qubit gates between spin qubits.pdf",
+    "io_theory2_clean_notebook": "C:/path/to/IO theory2 - clean.nb",
+    "two_qubit_gate_with_resonator_workflow_md": "C:/path/to/Research Diary/06 Projects/Dynamics/Two qubit gate with resonator work flow.md"
+  }
 }
