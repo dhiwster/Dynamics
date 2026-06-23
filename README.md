@@ -57,6 +57,7 @@ Use the `reference_files` block there for machine-specific absolute paths to ext
 
 Track stable reference names and usage notes under `references/`.
 Keep actual absolute filesystem paths in `local_paths.json` instead of hardcoding personal machine paths into scripts.
+If a personal note needs a repository-local published copy, store that Markdown version under `references/published/`.
 
 ## Notes for Mathematica
 
