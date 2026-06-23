@@ -46,7 +46,7 @@ from scipy.integrate import cumulative_trapezoid, solve_ivp
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
     from hamiltonians.models import (
-        HBAR_UEV_NS,
+        RAD_PER_NS_PER_MICROELECTRONVOLT,
         single_dqd_eigensystem,
         single_dqd_hamiltonian,
         single_dqd_numpy_operators,
@@ -55,7 +55,7 @@ if __package__ in {None, ""}:
     )
 else:
     from hamiltonians.models import (
-        HBAR_UEV_NS,
+        RAD_PER_NS_PER_MICROELECTRONVOLT,
         single_dqd_eigensystem,
         single_dqd_hamiltonian,
         single_dqd_numpy_operators,
@@ -115,7 +115,9 @@ def rx_duration(params: DQDParams, angle: float) -> float:
     matrix_element = edsr_matrix_element(params)
     if matrix_element <= 0:
         raise ValueError("EDSR matrix element is zero; cannot calibrate Rx pulse")
-    return abs(angle) * HBAR_UEV_NS / (params.Vac0 * matrix_element)
+    return abs(angle) / (
+        params.Vac0 * matrix_element * RAD_PER_NS_PER_MICROELECTRONVOLT
+    )
 
 
 def make_epsilon_schedule(t_rx: float, pulse: PulseParams) -> Callable[[float], float]:
@@ -174,7 +176,7 @@ def evolve_state(
     """Integrate Schrodinger evolution and return states as columns."""
 
     def rhs(t: float, psi: np.ndarray) -> np.ndarray:
-        return -1j * (hamiltonian(t) @ psi) / HBAR_UEV_NS
+        return -1j * (hamiltonian(t) @ psi) * RAD_PER_NS_PER_MICROELECTRONVOLT
 
     result = solve_ivp(
         rhs,

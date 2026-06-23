@@ -1,6 +1,5 @@
-# Replace these placeholders with the exact packages your project requires.
-numpy==2.2.5
-scipy==1.15.3
-matplotlib==3.10.1
-pandas==2.2.3
-qutip==5.1.1
+numpy==2.5.0
+scipy==1.18.0
+matplotlib==3.11.0
+pandas==3.0.3
+qutip==5.3.0

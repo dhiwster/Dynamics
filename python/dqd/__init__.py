@@ -1,9 +1,9 @@
-from .builders import build_H
+from hamiltonians.builders import build_H
+from hamiltonians.evolution import run_state, run_unitary
 
 try:
     from .circuit import (
         DQDSequenceCompiler,
-        hbar_ns,
         initial_full_state,
         iswap_H,
         plot_pulse_schedule,
@@ -18,8 +18,6 @@ try:
     from .solver import (
         dqd_populations,
         dqd_qubit_unitary,
-        run_state,
-        run_unitary,
         two_qubit_unitary,
         vacuum_subspace_unitary,
     )
@@ -33,7 +31,6 @@ __all__ = [
     "DQDsystem",
     "dqd_populations",
     "dqd_qubit_unitary",
-    "hbar_ns",
     "initial_full_state",
     "iswap_H",
     "plot_pulse_schedule",

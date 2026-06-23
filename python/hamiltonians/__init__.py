@@ -1,6 +1,13 @@
+from .builders import build_H, build_static_plus_controls, delta_pulse
+from .evolution import run_state, run_unitary
 from .models import (
-    HBAR_UEV_NS,
-    HBAR_UEV_US,
+    ELEMENTARY_CHARGE_C,
+    HBAR_J_S,
+    MICROELECTRONVOLT_TO_JOULE,
+    MICROSECOND_TO_SECOND,
+    NANOSECOND_TO_SECOND,
+    RAD_PER_NS_PER_MICROELECTRONVOLT,
+    RAD_PER_US_PER_MICROELECTRONVOLT,
     TWO_PI,
     SingleDQDOperatorsNumpy,
     SingleDQDOperatorsQutip,
@@ -18,9 +25,17 @@ from .models import (
 from .pulses import constant, piecewise, square
 
 __all__ = [
-    "HBAR_UEV_NS",
-    "HBAR_UEV_US",
+    "ELEMENTARY_CHARGE_C",
+    "HBAR_J_S",
+    "MICROELECTRONVOLT_TO_JOULE",
+    "MICROSECOND_TO_SECOND",
+    "NANOSECOND_TO_SECOND",
+    "RAD_PER_NS_PER_MICROELECTRONVOLT",
+    "RAD_PER_US_PER_MICROELECTRONVOLT",
     "TWO_PI",
+    "build_H",
+    "build_static_plus_controls",
+    "delta_pulse",
     "SingleDQDOperatorsNumpy",
     "SingleDQDOperatorsQutip",
     "SingleDQDSpectrum",
@@ -35,5 +50,7 @@ __all__ = [
     "single_dqd_tau_z_matrix_element",
     "constant",
     "piecewise",
+    "run_state",
+    "run_unitary",
     "square",
 ]

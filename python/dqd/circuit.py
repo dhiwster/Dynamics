@@ -22,13 +22,13 @@ from __future__ import annotations
 import numpy as np
 import qutip as qt
 
+from hamiltonians.models import RAD_PER_NS_PER_MICROELECTRONVOLT
 from .system import DQDsystem
 
 # ---------------------------------------------------------------------------
 # Unit conversion
 # ---------------------------------------------------------------------------
 
-hbar_ns  = 0.6582119569   # ħ in μeV·ns
 _MHz2GHz = 1e-3
 
 # ---------------------------------------------------------------------------
@@ -42,22 +42,26 @@ def _H0_ns(dqd: DQDsystem) -> qt.Qobj:
 
 def _eps1_op(dqd: DQDsystem) -> qt.Qobj:
     """DQD1 detuning operator [GHz/μeV]: τ_z1 / (2ħ)."""
-    return qt.tensor(qt.qeye(dqd.photon_max), dqd.tz1) / (2 * hbar_ns)
+    return qt.tensor(qt.qeye(dqd.photon_max), dqd.tz1) * (
+        0.5 * RAD_PER_NS_PER_MICROELECTRONVOLT
+    )
 
 
 def _eps2_op(dqd: DQDsystem) -> qt.Qobj:
     """DQD2 detuning operator [GHz/μeV]: τ_z2 / (2ħ)."""
-    return qt.tensor(qt.qeye(dqd.photon_max), dqd.tz2) / (2 * hbar_ns)
+    return qt.tensor(qt.qeye(dqd.photon_max), dqd.tz2) * (
+        0.5 * RAD_PER_NS_PER_MICROELECTRONVOLT
+    )
 
 
 def _edsr1_op(dqd: DQDsystem) -> qt.Qobj:
     """DQD1 EDSR drive operator [GHz]: Vac0 · τ_z1 / ħ."""
-    return dqd.H_edsr1_amplitude / hbar_ns
+    return dqd.H_edsr1_amplitude * RAD_PER_NS_PER_MICROELECTRONVOLT
 
 
 def _edsr2_op(dqd: DQDsystem) -> qt.Qobj:
     """DQD2 EDSR drive operator [GHz]: Vac0 · τ_z2 / ħ."""
-    return dqd.H_edsr2_amplitude / hbar_ns
+    return dqd.H_edsr2_amplitude * RAD_PER_NS_PER_MICROELECTRONVOLT
 
 
 # ---------------------------------------------------------------------------
@@ -90,7 +94,7 @@ def zrot_delta_freq_GHz(dqd: DQDsystem, eps_amp: float) -> float:
     e_base = np.sort(H_base.eigenenergies())
     e_det  = np.sort(H_det.eigenenergies())
 
-    return abs((e_det[1] - e_det[0]) - (e_base[1] - e_base[0])) / hbar_ns
+    return abs((e_det[1] - e_det[0]) - (e_base[1] - e_base[0])) * RAD_PER_NS_PER_MICROELECTRONVOLT
 
 
 def zrot_time_ns(dqd: DQDsystem, eps_amp: float, angle: float) -> float:
@@ -150,7 +154,7 @@ def xrot_H(
     if target not in (1, 2):
         raise ValueError("target must be 1 or 2")
     eps_idle    = dqd.epsilon_idle if eps_idle is None else eps_idle
-    Esigma_GHz  = dqd.Esigma / hbar_ns
+    Esigma_GHz  = dqd.Esigma * RAD_PER_NS_PER_MICROELECTRONVOLT
     H0          = _H0_ns(dqd)
     H_drv, H_idl = (_edsr1_op(dqd), _eps2_op(dqd)) if target == 1 else (_edsr2_op(dqd), _eps1_op(dqd))
 
@@ -252,11 +256,13 @@ def initial_full_state(
 def print_summary(dqd: DQDsystem) -> None:
     """Print key derived parameters and gate times for the given DQDsystem."""
     phi_bar      = dqd.phi_bar
-    Esigma_GHz   = dqd.Esigma / hbar_ns
+    Esigma_GHz   = dqd.Esigma * RAD_PER_NS_PER_MICROELECTRONVOLT
     g_sigma_GHz  = dqd.g_sigma * _MHz2GHz
     d_sigma_GHz  = dqd.d_sigma * _MHz2GHz
     tg_iSWAP     = dqd.iSWAP_gate_time() * 1e3
-    t_x180       = np.pi * hbar_ns / (dqd.Vac0 * np.sin(phi_bar))
+    t_x180       = np.pi / (
+        dqd.Vac0 * np.sin(phi_bar) * RAD_PER_NS_PER_MICROELECTRONVOLT
+    )
     r_s, _       = dqd.dispersive_ratios()
 
     print(f"DQD:        tc={dqd.tc} μeV,  Bz={dqd.Bz} μeV (fixed),  bx={dqd.bx} μeV (fixed)")
@@ -266,7 +272,10 @@ def print_summary(dqd: DQDsystem) -> None:
     print(f"Coupling:   g_σ={g_sigma_GHz*1e3:.4f} MHz,  Δ_σ={d_sigma_GHz*1e3:.2f} MHz,  g/Δ={r_s:.5f}")
     print(f"tg(iSWAP):  {tg_iSWAP:.4f} ns")
     print(f"t(Rx90):    {t_x180/2:.4f} ns,  t(Rx180): {t_x180:.4f} ns")
-    print(f"Vac0:       {dqd.Vac0} μeV  (Rabi={dqd.Vac0/hbar_ns*np.sin(phi_bar)*1e3:.3f} MHz)")
+    print(
+        f"Vac0:       {dqd.Vac0} μeV  "
+        f"(Rabi={dqd.Vac0 * np.sin(phi_bar) * RAD_PER_NS_PER_MICROELECTRONVOLT * 1e3:.3f} MHz)"
+    )
     print(f"ε_idle:     {dqd.epsilon_idle:.1f} μeV")
 
 
@@ -318,7 +327,7 @@ class DQDSequenceCompiler:
         self._dt         = dt
         self._steps: list = []
         self._phi_bar    = dqd.phi_bar
-        self._Esigma_GHz = dqd.Esigma / hbar_ns
+        self._Esigma_GHz = dqd.Esigma * RAD_PER_NS_PER_MICROELECTRONVOLT
         self._eps_idle   = dqd.epsilon_idle
         # One phase accumulator per DQD (index 0 = DQD1, index 1 = DQD2).
         # Updated by add_zrot (explicit virtual rotation) and by add_xrot
@@ -383,7 +392,9 @@ class DQDSequenceCompiler:
         if target not in (1, 2):
             raise ValueError("target must be 1 or 2")
 
-        duration  = abs(angle) * hbar_ns / (self._sys.Vac0 * np.sin(self._phi_bar))
+        duration  = abs(angle) / (
+            self._sys.Vac0 * np.sin(self._phi_bar) * RAD_PER_NS_PER_MICROELECTRONVOLT
+        )
         phi_drive = self.phase_accumulator[target - 1]   # snapshot before gate
 
         # Idle DQD accumulates phase from ε_idle detuning during this gate

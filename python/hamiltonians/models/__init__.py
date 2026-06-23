@@ -1,6 +1,11 @@
 from .single import (
-    HBAR_UEV_NS,
-    HBAR_UEV_US,
+    ELEMENTARY_CHARGE_C,
+    HBAR_J_S,
+    MICROELECTRONVOLT_TO_JOULE,
+    MICROSECOND_TO_SECOND,
+    NANOSECOND_TO_SECOND,
+    RAD_PER_NS_PER_MICROELECTRONVOLT,
+    RAD_PER_US_PER_MICROELECTRONVOLT,
     TWO_PI,
     SingleDQDOperatorsNumpy,
     SingleDQDOperatorsQutip,
@@ -17,8 +22,13 @@ from .single import (
 )
 
 __all__ = [
-    "HBAR_UEV_NS",
-    "HBAR_UEV_US",
+    "ELEMENTARY_CHARGE_C",
+    "HBAR_J_S",
+    "MICROELECTRONVOLT_TO_JOULE",
+    "MICROSECOND_TO_SECOND",
+    "NANOSECOND_TO_SECOND",
+    "RAD_PER_NS_PER_MICROELECTRONVOLT",
+    "RAD_PER_US_PER_MICROELECTRONVOLT",
     "TWO_PI",
     "SingleDQDOperatorsNumpy",
     "SingleDQDOperatorsQutip",

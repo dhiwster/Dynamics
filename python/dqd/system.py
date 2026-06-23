@@ -2,7 +2,7 @@ import numpy as np
 from qutip import basis, destroy, qeye, sigmay, tensor
 
 from hamiltonians.models import (
-    HBAR_UEV_US,
+    RAD_PER_US_PER_MICROELECTRONVOLT,
     TWO_PI,
     SingleDQDOperatorsQutip,
     single_dqd_qutip_hamiltonian,
@@ -11,7 +11,7 @@ from hamiltonians.models import (
 )
 
 Pi2 = TWO_PI
-hbar = HBAR_UEV_US
+RAD_PER_US_PER_MICROEV = RAD_PER_US_PER_MICROELECTRONVOLT
 
 
 class DQDsystem:
@@ -123,8 +123,8 @@ class DQDsystem:
         self.Esigma = spectrum.Esigma
         self.Etau = spectrum.Etau
 
-        self.d_sigma = self.Esigma / hbar - self.wc
-        self.d_tau = self.Etau / hbar - self.wc
+        self.d_sigma = self.Esigma * RAD_PER_US_PER_MICROEV - self.wc
+        self.d_tau = self.Etau * RAD_PER_US_PER_MICROEV - self.wc
         self.g_sigma = self.gc * np.sin(self.phi_bar)
         self.g_tau = self.gc * np.cos(self.phi_bar)
 
@@ -138,8 +138,14 @@ class DQDsystem:
         N = self.photon_max
         a = self.a
 
-        H_static1 = tensor(qeye(N), single_dqd_qutip_hamiltonian(self, self.epsilon, self.ops1)) / hbar
-        H_static2 = tensor(qeye(N), single_dqd_qutip_hamiltonian(self, self.epsilon, self.ops2)) / hbar
+        H_static1 = (
+            tensor(qeye(N), single_dqd_qutip_hamiltonian(self, self.epsilon, self.ops1))
+            * RAD_PER_US_PER_MICROEV
+        )
+        H_static2 = (
+            tensor(qeye(N), single_dqd_qutip_hamiltonian(self, self.epsilon, self.ops2))
+            * RAD_PER_US_PER_MICROEV
+        )
         H_photon = wc * a.dag() * a
         H_int1 = gc * tensor(qeye(N), self.tz1) * (a + a.dag())
         H_int2 = gc * tensor(qeye(N), self.tz2) * (a + a.dag())
@@ -147,19 +153,19 @@ class DQDsystem:
         self.H_int1 = H_int1
         self.H_int2 = H_int2
 
-        self.H_tc1_op = tensor(qeye(N), self.tx1) / hbar
-        self.H_tc2_op = tensor(qeye(N), self.tx2) / hbar
-        self.H_eps1_op = tensor(qeye(N), self.tz1) / (2 * hbar)
-        self.H_eps2_op = tensor(qeye(N), self.tz2) / (2 * hbar)
+        self.H_tc1_op = tensor(qeye(N), self.tx1) * RAD_PER_US_PER_MICROEV
+        self.H_tc2_op = tensor(qeye(N), self.tx2) * RAD_PER_US_PER_MICROEV
+        self.H_eps1_op = tensor(qeye(N), self.tz1) * (0.5 * RAD_PER_US_PER_MICROEV)
+        self.H_eps2_op = tensor(qeye(N), self.tz2) * (0.5 * RAD_PER_US_PER_MICROEV)
 
         self.H_detuned1 = tensor(
             qeye(N),
             (self.tc_idle - self.tc) * self.tx1 + self.epsilon_idle / 2 * self.tz1,
-        ) / hbar
+        ) * RAD_PER_US_PER_MICROEV
         self.H_detuned2 = tensor(
             qeye(N),
             (self.tc_idle - self.tc) * self.tx2 + self.epsilon_idle / 2 * self.tz2,
-        ) / hbar
+        ) * RAD_PER_US_PER_MICROEV
 
         self.H_edsr1_amplitude = tensor(qeye(N), self.Vac0 * self.tz1)
         self.H_edsr2_amplitude = tensor(qeye(N), self.Vac0 * self.tz2)

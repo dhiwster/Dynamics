@@ -7,8 +7,17 @@ from typing import Any
 import numpy as np
 
 TWO_PI = 2 * np.pi
-HBAR_UEV_NS = 0.6582119569
-HBAR_UEV_US = HBAR_UEV_NS / 1000.0
+HBAR_J_S = 1.054571817e-34
+ELEMENTARY_CHARGE_C = 1.602176634e-19
+MICROELECTRONVOLT_TO_JOULE = 1e-6 * ELEMENTARY_CHARGE_C
+NANOSECOND_TO_SECOND = 1e-9
+MICROSECOND_TO_SECOND = 1e-6
+RAD_PER_NS_PER_MICROELECTRONVOLT = (
+    MICROELECTRONVOLT_TO_JOULE * NANOSECOND_TO_SECOND / HBAR_J_S
+)
+RAD_PER_US_PER_MICROELECTRONVOLT = (
+    MICROELECTRONVOLT_TO_JOULE * MICROSECOND_TO_SECOND / HBAR_J_S
+)
 
 
 @dataclass(frozen=True)
@@ -154,7 +163,7 @@ def single_dqd_eigensystem(model: Any, epsilon: float) -> tuple[np.ndarray, np.n
 
 def single_dqd_qubit_splitting(model: Any, epsilon: float) -> float:
     energies, _ = single_dqd_eigensystem(model, epsilon)
-    return float((energies[1] - energies[0]) / HBAR_UEV_NS)
+    return float((energies[1] - energies[0]) * RAD_PER_NS_PER_MICROELECTRONVOLT)
 
 
 def single_dqd_tau_z_matrix_element(model: Any, epsilon: float = 0.0) -> float:
