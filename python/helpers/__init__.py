@@ -26,6 +26,11 @@ from .pulses import Pulse, constant, piecewise, square
 try:
     from .gates import (
         build_H,
+        drift_H,
+        edsr1_op,
+        edsr2_op,
+        eps1_op,
+        eps2_op,
         initial_full_state,
         iswap_H,
         vacuum_eigenstates,
@@ -62,6 +67,11 @@ __all__ = [
     "TWO_PI",
     "build_H",
     "constant",
+    "drift_H",
+    "edsr1_op",
+    "edsr2_op",
+    "eps1_op",
+    "eps2_op",
     "dqd_populations",
     "dqd_qubit_unitary",
     "DQDSequenceCompiler",

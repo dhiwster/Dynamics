@@ -40,9 +40,8 @@ If the exact filesystem location differs by OS, keep the logical target consiste
 |-- runs.json
 |-- references/
 |-- python/
-|   |-- DQD/
-|   |-- simulations/
-|   `-- notebooks/
+|   |-- helpers/      ← shared physics, gates, solver, and viz code
+|   `-- notebooks/    ← experiments, interactive scripts, and .ipynb files
 |-- mathematica/
 `-- configs/
 ```

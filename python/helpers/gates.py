@@ -11,30 +11,35 @@ _MHz2GHz = 1e-3
 
 
 # ---------------------------------------------------------------------------
-# Internal operator helpers
+# Operator helpers (public — used directly in notebooks)
 # ---------------------------------------------------------------------------
 
-def _H0_ns(dqd: DQDsystem) -> qt.Qobj:
+def drift_H(dqd: DQDsystem) -> qt.Qobj:
+    """Full static Hamiltonian at ε=0 in rad/ns."""
     return dqd.H_static * _MHz2GHz
 
 
-def _eps1_op(dqd: DQDsystem) -> qt.Qobj:
+def eps1_op(dqd: DQDsystem) -> qt.Qobj:
+    """DQD1 detuning operator: τ_z1 / (2ħ) in rad/(ns·μeV)."""
     return qt.tensor(qt.qeye(dqd.photon_max), dqd.tz1) * (
         0.5 * RAD_PER_NS_PER_MICROELECTRONVOLT
     )
 
 
-def _eps2_op(dqd: DQDsystem) -> qt.Qobj:
+def eps2_op(dqd: DQDsystem) -> qt.Qobj:
+    """DQD2 detuning operator: τ_z2 / (2ħ) in rad/(ns·μeV)."""
     return qt.tensor(qt.qeye(dqd.photon_max), dqd.tz2) * (
         0.5 * RAD_PER_NS_PER_MICROELECTRONVOLT
     )
 
 
-def _edsr1_op(dqd: DQDsystem) -> qt.Qobj:
+def edsr1_op(dqd: DQDsystem) -> qt.Qobj:
+    """DQD1 EDSR drive operator: Vac0·τ_z1/ħ in rad/(ns·μeV)."""
     return dqd.H_edsr1_amplitude * RAD_PER_NS_PER_MICROELECTRONVOLT
 
 
-def _edsr2_op(dqd: DQDsystem) -> qt.Qobj:
+def edsr2_op(dqd: DQDsystem) -> qt.Qobj:
+    """DQD2 EDSR drive operator: Vac0·τ_z2/ħ in rad/(ns·μeV)."""
     return dqd.H_edsr2_amplitude * RAD_PER_NS_PER_MICROELECTRONVOLT
 
 
@@ -70,7 +75,7 @@ def zrot_time_ns(dqd: DQDsystem, eps_amp: float, angle: float) -> float:
 
 def iswap_H(dqd: DQDsystem) -> list:
     """iSWAP Hamiltonian at ε=0. Gate duration: dqd.iSWAP_gate_time() * 1e3 ns."""
-    return [_H0_ns(dqd)]
+    return [drift_H(dqd)]
 
 
 def xrot_H(
@@ -85,8 +90,8 @@ def xrot_H(
         raise ValueError("target must be 1 or 2")
     eps_idle   = dqd.epsilon_idle if eps_idle is None else eps_idle
     Esigma_GHz = dqd.Esigma * RAD_PER_NS_PER_MICROELECTRONVOLT
-    H0         = _H0_ns(dqd)
-    H_drv, H_idl = (_edsr1_op(dqd), _eps2_op(dqd)) if target == 1 else (_edsr2_op(dqd), _eps1_op(dqd))
+    H0         = drift_H(dqd)
+    H_drv, H_idl = (edsr1_op(dqd), eps2_op(dqd)) if target == 1 else (edsr2_op(dqd), eps1_op(dqd))
 
     def _edsr(t, **kwargs):
         return np.cos(Esigma_GHz * t) if t_start <= t < t_end else 0.0
@@ -109,8 +114,8 @@ def zrot_H(
     if target not in (1, 2):
         raise ValueError("target must be 1 or 2")
     eps_idle = dqd.epsilon_idle if eps_idle is None else eps_idle
-    H0       = _H0_ns(dqd)
-    H_tgt, H_idl = (_eps1_op(dqd), _eps2_op(dqd)) if target == 1 else (_eps2_op(dqd), _eps1_op(dqd))
+    H0       = drift_H(dqd)
+    H_tgt, H_idl = (eps1_op(dqd), eps2_op(dqd)) if target == 1 else (eps2_op(dqd), eps1_op(dqd))
 
     def _eps_pulse(t, **kwargs):
         return eps_amp if t_start <= t < t_end else 0.0

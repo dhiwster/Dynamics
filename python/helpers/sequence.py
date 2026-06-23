@@ -4,11 +4,11 @@ import numpy as np
 
 from .constants import RAD_PER_NS_PER_MICROELECTRONVOLT
 from .gates import (
-    _H0_ns,
-    _edsr1_op,
-    _edsr2_op,
-    _eps1_op,
-    _eps2_op,
+    drift_H,
+    edsr1_op,
+    edsr2_op,
+    eps1_op,
+    eps2_op,
     zrot_delta_freq_GHz,
 )
 from .system import DQDsystem
@@ -145,7 +145,7 @@ class DQDSequenceCompiler:
         T = offsets[-1]
 
         tlist   = np.arange(0.0, T + self._dt, self._dt)
-        H_drift = _H0_ns(dqd)
+        H_drift = drift_H(dqd)
         terms: list = []
 
         for i, step in enumerate(self._steps):
@@ -159,8 +159,8 @@ class DQDSequenceCompiler:
             elif gtype == 'xrot':
                 tgt       = step['target']
                 phi_drive = step['phi_drive']
-                H_drv = _edsr1_op(dqd) if tgt == 1 else _edsr2_op(dqd)
-                H_idl = _eps2_op(dqd)  if tgt == 1 else _eps1_op(dqd)
+                H_drv = edsr1_op(dqd) if tgt == 1 else edsr2_op(dqd)
+                H_idl = eps2_op(dqd)  if tgt == 1 else eps1_op(dqd)
 
                 def _edsr(t, _t0=t0, _t1=t1, _w=Esigma_GHz, _phi=phi_drive, **kwargs):
                     return np.cos(_w * t + _phi) if _t0 <= t < _t1 else 0.0
